@@ -1,0 +1,35 @@
+import pandas as pd
+from sklearn.preprocessing import StandardScaler
+from sklearn.externals import joblib
+
+def load_model(model_path):
+    loaded_model = joblib.load(model_path)
+    return loaded_model
+
+model_path = "best_svm_grid_model.pkl"
+loaded_model = load_model(model_path)
+scaler_path = 'scaler_model.pkl'
+scaler = load_model(scaler_path)
+
+def get_predictions(model, data):    
+    predictions = model.predict(data)
+    return predictions
+
+def preprocess_data(scaler, csv_file_path):
+    df = pd.read_csv(csv_file_path)
+    df.drop('loan_id', axis=1, inplace=True)
+    df.columns = df.columns.str.strip()
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+    df["self_employed"] = df["self_employed"].apply(lambda x: 1 if x == "Yes" else 0)
+    df["education"] = df["education"].apply(lambda x: 1 if x == "Graduate" else 0)
+    df["loan_status"] = df["loan_status"].apply(lambda x: 1 if x == "Approved" else 0)
+    X = df.drop(['loan_status'], axis=1)
+    X_scaled = scaler.transform(X)
+    return X_scaled
+
+# Example usage:
+csv_file_path = "C:/Users/PC/OneDrive/Desktop/AML/DT and SVM/loan_approval_dataset.csv"
+preprocessed_data = preprocess_data(scaler, csv_file_path)
+print(preprocessed_data)
+predictions = get_predictions(loaded_model, preprocessed_data)
+print(predictions)

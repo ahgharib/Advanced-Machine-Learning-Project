@@ -1,0 +1,30 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
+def split_data(preprocessed_data, test_size=0.2, random_state=42):
+    """
+    Split the preprocessed data into training and testing sets.
+
+    Parameters:
+    - preprocessed_data: The preprocessed data after scaling and preprocessing.
+    - test_size: The proportion of the dataset to include in the test split (default is 0.2).
+    - random_state: Controls the shuffling applied to the data before splitting (default is 42).
+
+    Returns:
+    - X_train_scaled: The features of the training set.
+    - X_test_scaled: The features of the testing set.
+    - y_train: The target values of the training set.
+    - y_test: The target values of the testing set.
+    """
+    X_train, X_test, y_train, y_test = train_test_split(preprocessed_data.drop(['loan_status'], axis=1),
+                                                        preprocessed_data['loan_status'],
+                                                        test_size=test_size,
+                                                        random_state=random_state)
+    return X_train, X_test, y_train, y_test
+
+# Example usage:
+X_train_scaled, X_test_scaled, y_train, y_test = split_data(preprocessed_data)
+print("X_train shape:", X_train_scaled.shape)
+print("X_test shape:", X_test_scaled.shape)
+print("y_train shape:", y_train.shape)
+print("y_test shape:", y_test.shape)

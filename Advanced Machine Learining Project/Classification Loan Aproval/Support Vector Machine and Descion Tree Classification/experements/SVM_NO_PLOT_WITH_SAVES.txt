@@ -1,0 +1,73 @@
+import numpy as np
+import pandas as pd
+from sklearn.svm import SVC
+from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, classification_report, confusion_matrix
+from scipy.stats import uniform, loguniform
+from sklearn.externals import joblib
+import warnings
+
+warnings.filterwarnings('ignore')
+
+df = pd.read_csv("C:/Users/PC/OneDrive/Desktop/AML/DT and SVM/loan_approval_dataset.csv")
+
+df.drop('loan_id', axis=1, inplace=True)
+
+df.columns = df.columns.str.strip()
+
+df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+df["self_employed"] = df["self_employed"].apply(lambda x: 1 if x == "Yes" else 0)
+df["education"] = df["education"].apply(lambda x: 1 if x == "Graduate" else 0)
+df["loan_status"] = df["loan_status"].apply(lambda x: 1 if x == "Approved" else 0)
+
+x = df.drop(['loan_status'], axis=1)
+y = df['loan_status']
+
+X_train, X_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# Saving the scaler
+joblib.dump(scaler, 'scaler_model.pkl')
+
+# Training SVM models
+svc = SVC(kernel="linear")
+svc.fit(X_train_scaled, y_train)
+joblib.dump(svc, 'linear_svm_model.pkl')
+
+param_grid = {
+    'C': [1, 10, 100],
+    'gamma': [1, 0.1, 0.01],
+    'kernel': ['rbf', 'linear', 'sigmoid']
+}
+
+grid_search = GridSearchCV(estimator=svc, param_grid=param_grid, cv=5, n_jobs=-1, verbose=2)
+grid_search.fit(X_train_scaled, y_train)
+
+best_params_grid = grid_search.best_params_
+print("Best hyperparameters:", best_params_grid)
+
+best_svm_grid = SVC(**best_params_grid)
+best_svm_grid.fit(X_train_scaled, y_train)
+joblib.dump(best_svm_grid, 'best_svm_grid_model.pkl')
+
+param_distributions = {
+    'C': loguniform(1e-4, 1e4),
+    'gamma': loguniform(1e-4, 1e4),
+    'kernel': ['rbf', 'sigmoid']
+}
+
+random_search = RandomizedSearchCV(estimator=svc, param_distributions=param_distributions, n_iter=100,
+                                   cv=5, n_jobs=-1, verbose=2, random_state=42)
+random_search.fit(X_train_scaled, y_train)
+
+best_params_rdm = random_search.best_params_
+print("Best hyperparameters:", best_params_rdm)
+
+best_svc_rdm = SVC(**best_params_rdm)
+best_svc_rdm.fit(X_train_scaled, y_train)
+joblib.dump(best_svc_rdm, 'best_svc_rdm_model.pkl')
